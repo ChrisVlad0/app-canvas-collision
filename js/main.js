@@ -1,9 +1,40 @@
 const canvas = document.getElementById("canvas");
 let ctx = canvas.getContext("2d");
 
+// Variables para almacenar las coordenadas del mouse
+let mouseX = 0;
+let mouseY = 0;
+
+// Obtener las coordenadas del mouse
+function obtenerCoordenadas(evento) {
+    // Obtener las coordenadas relativas al canvas
+    var rect = canvas.getBoundingClientRect();
+    mouseX = evento.clientX - rect.left;
+    mouseY = evento.clientY - rect.top;
+
+    console.log("Coordenada X: " + mouseX + " Coordenada Y: " + mouseY);
+}
+
+// Agregar un evento de escucha para el movimiento del mouse en el canvas
+canvas.addEventListener("mousemove", obtenerCoordenadas);
+
+// Agregar un evento de escucha para clics en el canvas
+canvas.addEventListener("click", function(evento) {
+    // Verificar si las coordenadas del clic están dentro de algún círculo
+    for (let i = 0; i < circles.length; i++) {
+        let circle = circles[i];
+        let distance = getDistance(mouseX, mouseY, circle.posX, circle.posY);
+        if (distance < circle.radius) {
+            // Eliminar el círculo del arreglo
+            circles.splice(i, 1);
+            break;
+        }
+    }
+});
+
 //Obtiene las dimensiones de la pantalla actual
-const window_height = window.innerHeight;
-const window_width = window.innerWidth;
+const window_height = window.innerHeight * 0.7;
+const window_width = window.innerWidth * 0.7;
 
 canvas.height = window_height;
 canvas.width = window_width;
@@ -11,17 +42,18 @@ canvas.width = window_width;
 canvas.style.background = "#ff8";
 
 class Circle {
-    constructor(x, y, radius, color, text, speed) {
+    constructor(x, y, radius, color, text, speedX, speedY) {
         this.posX = x;
         this.posY = y;
         this.radius = radius;
         this.color = color;
         this.originalColor = color; // Almacenar el color original
         this.text = text;
-        this.speed = speed;
+        this.speedX = speedX; // Velocidad horizontal aleatoria
+        this.speedY = speedY; // Velocidad vertical hacia arriba
 
-        this.dx = 1 * this.speed;
-        this.dy = 1 * this.speed;
+        this.dx = 1 * this.speedX;
+        this.dy = 1 * this.speedY;
     }
 
     draw(context) {
@@ -42,16 +74,8 @@ class Circle {
     update(context, circles) {
         this.draw(context);
 
-        if ((this.posX + this.radius) > window_width || (this.posX - this.radius) < 0) {
-            this.dx = -this.dx;
-        }
-
-        if ((this.posY - this.radius) < 0 || (this.posY + this.radius) > window_height) {
-            this.dy = -this.dy;
-        }
-
-        this.posX += this.dx;
-        this.posY += this.dy;
+        this.posX += this.dx; // Mover horizontalmente
+        this.posY -= this.dy; // Mover verticalmente hacia arriba
 
         // Verificar colisiones con otros círculos
         for (let circle of circles) {
@@ -82,16 +106,19 @@ function getDistance(posX1, posY1, posX2, posY2) {
 let circles = [];
 
 // Agregar hasta 10 círculos al arreglo
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 6; i++) {
     let randomRadius = Math.floor(Math.random() * 100 + 30);
     let randomX, randomY;
 
     do {
         randomX = Math.random() * (window_width - 2 * randomRadius) + randomRadius; // Asegura que el círculo esté completamente dentro del canvas
-        randomY = Math.random() * (window_height - 2 * randomRadius) + randomRadius; // Asegura que el círculo esté completamente dentro del canvas
+        randomY = window_height - 2 * randomRadius; // Comienza desde la parte inferior de la pantalla
     } while (circles.some(circle => getDistance(randomX, randomY, circle.posX, circle.posY) < (randomRadius + circle.radius)));
 
-    let newCircle = new Circle(randomX, randomY, randomRadius, "blue", (i + 1).toString(), 1);
+    let randomSpeedX = (Math.random() - 0.5) * 2; // Velocidad horizontal aleatoria
+    let randomSpeedY = Math.random() * 2 + 1; // Velocidad vertical hacia arriba
+
+    let newCircle = new Circle(randomX, randomY, randomRadius, "blue", (i + 1).toString(), randomSpeedX, randomSpeedY);
     circles.push(newCircle);
 }
 
@@ -110,6 +137,16 @@ let updateCircle = function () {
             circle.color = circle.originalColor;
         }
     }
+
+    // Mostrar las coordenadas del mouse
+    xymouse(ctx);
 };
+
+function xymouse(context) {
+    context.font = "bold 10px cursive";
+    context.fillStyle = "black";
+    context.fillText("x: " + mouseX, 20, 10);
+    context.fillText("y: " + mouseY, 20, 25);
+}
 
 updateCircle();
